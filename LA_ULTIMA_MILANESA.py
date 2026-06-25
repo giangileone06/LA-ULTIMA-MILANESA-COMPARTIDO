@@ -791,8 +791,8 @@ class ArenaPokemon:
 
             if self.modo == "Historia" and self.ronda_actual == 6:
                 msg = ("🏆 ¡Limpiaste las 5 hordas de lacayos!\n\n"
-                       "🛡 ¡TE ENCONTRÁS UN PORTÓN DE REJA BLINDADO EN EL PISO!\n"
-                       "Robertito se lo pone encima y queda blindado con 4 de mitigación\n"
+                       "🛡 ¡TE ENCONTRÁS UN ESCUDO EN EL PISO!\n"
+                       "Robertito se lo pone encima y queda blindado\n"
                        "para aguantar los paravalanchas del JEFE FALOPINO...")
 
                 self.heroe.armadura_rota = False
