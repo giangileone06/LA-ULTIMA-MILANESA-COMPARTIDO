@@ -70,7 +70,6 @@ class Personaje:
         if self._armadura_equipada is not None and not self.armadura_rota:
             amount = self._armadura_equipada.absorber_daño(cantidad)
             texto_armadura = "🛡️ ¡Mitigado por armadura!\n"
-
             if self._salud_actual - amount <= self.salud_maxima * 0.5:
                 self.armadura_rota = True
                 texto_armadura += "💥 ¡LA ARMADURA SE HIZO PEDAZOS!\n"
@@ -184,19 +183,18 @@ class JefeFalopino(Personaje):
 
 
 # =========================================================================
-# MENÚ INICIAL  —  versión con paneles semi-transparentes PIL
+# MENÚ INICIAL
 # =========================================================================
 
-# ── Paleta extraída del fondo ─────────────────────────────────────────────
-_GOLD       = "#D4AF37"
-_AMBER      = "#B46E14"
-_PARCHMENT  = "#F0D7A0"
-_SAGE       = "#1E5020"
-_BLOOD      = "#8C140A"
-_STEEL      = "#1E3264"
-_VIOLET     = "#3C0A50"
-_GREEN_BTN  = "#14A03C"
-_W, _H      = 620, 580
+_GOLD      = "#D4AF37"
+_AMBER     = "#B46E14"
+_PARCHMENT = "#F0D7A0"
+_SAGE      = "#1E5020"
+_BLOOD     = "#8C140A"
+_STEEL     = "#1E3264"
+_VIOLET    = "#3C0A50"
+_GREEN_BTN = "#14A03C"
+_W, _H     = 620, 580
 
 
 def _make_panel(w, h, fill_rgb=(10, 6, 2), alpha=130, radius=10,
@@ -225,7 +223,7 @@ class VentanaConfiguracion:
         self.modo_elegido       = "Historia"
         self.confirmado         = False
 
-        self._refs    = []   # anclas PhotoImage — evita que el GC las destruya
+        self._refs       = []
         self._fila_ids   = [None, None, None]
         self._fila_imgs  = [None, None, None]
         self._modo_ids   = {}
@@ -240,13 +238,11 @@ class VentanaConfiguracion:
 
         self.crear_interfaz()
 
-    # ── Construcción principal ────────────────────────────────────────────
     def crear_interfaz(self):
         self.canvas = tk.Canvas(self.root, width=_W, height=_H,
                                 highlightthickness=0, bd=0)
         self.canvas.place(x=0, y=0)
 
-        # Fondo + vignette
         try:
             bg = Image.open("fondo_menu.png").resize((_W, _H), Image.Resampling.LANCZOS)
         except FileNotFoundError:
@@ -257,11 +253,9 @@ class VentanaConfiguracion:
             a = int(155 * (i / 110) ** 1.8)
             vd.rectangle([i, i, _W-1-i, _H-1-i], outline=(0, 0, 0, a))
         comp = Image.alpha_composite(bg.convert("RGBA"), vig)
-        self._bg_comp   = comp                          # guardamos para redibujar highlights
-        self._bg_photo  = ImageTk.PhotoImage(comp.convert("RGB"))
+        self._bg_photo = ImageTk.PhotoImage(comp.convert("RGB"))
         self.canvas.create_image(0, 0, anchor="nw", image=self._bg_photo)
 
-        # ── PASO 1: Paneles estáticos de fondo ───────────────────────────
         self._pegar_panel(_make_panel(500, 46,  fill_rgb=(8,4,0),    alpha=165,
                                       radius=8,  border_hex=_GOLD,   border_w=2, glow=True),  60, 17)
         self._pegar_panel(_make_panel(500, 160, fill_rgb=(8,5,0),    alpha=128,
@@ -271,19 +265,15 @@ class VentanaConfiguracion:
         self._pegar_panel(_make_panel(540, 52,  fill_rgb=(10,80,25), alpha=235,
                                       radius=10, border_hex="#32C850", border_w=2, glow=True), 40, 490)
 
-        # ── PASO 2: Highlights dinámicos de dificultad ───────────────────
         self._panel_dif_y = [115, 155, 195]
         self._redraw_dif_rows()
 
-        # ── PASO 3: Placeholders para highlights de modos (se actualizan luego) ──
         self._modo_ids = {}
-        # creamos imágenes vacías para reservar los slots en el canvas
         for key, y in [("Historia", 310), ("Infinito", 386)]:
             ph = ImageTk.PhotoImage(Image.new("RGBA", (510, 62), (0,0,0,0)))
             self._refs.append(ph)
             self._modo_ids[key] = self.canvas.create_image(55, y, anchor="nw", image=ph)
 
-        # ── PASO 4: Todo el texto encima de los paneles ──────────────────
         self.canvas.create_text(310, 40,
             text="⚔️ GNOMOS VS ENANITOS ⚔️",
             font=("Courier", 15, "bold"), fill=_GOLD, anchor="center")
@@ -293,7 +283,7 @@ class VentanaConfiguracion:
             font=("Arial", 10, "bold"), fill="#ffffff", anchor="w")
 
         descs = [
-            "🟢 ROBERTITO CHETADO (Fácil): Sifón rendidor, Enanos sin escudo.",
+            "🟢 ROBERTITO (Fácil): Sifón rendidor, Enanos sin escudo.",
             "🟡 ROBERTITO (Medio): Macana de palo de escoba, Balanceado criollo.",
             "🔴 ROBERTITO (Ultra): Tramontina doblegado, vas a puro pulmón.",
         ]
@@ -305,7 +295,6 @@ class VentanaConfiguracion:
             text="🕹️ MODOS DE COMBATE",
             font=("Arial", 10, "bold"), fill="#ffffff", anchor="w")
 
-        # Textos de modos — creados DESPUÉS de los placeholders, siempre arriba
         self._modo_text_ids = {}
         self._modo_text_ids["Historia"] = [
             self.canvas.create_text(310, 339,
@@ -324,7 +313,6 @@ class VentanaConfiguracion:
                 font=("Courier", 9), fill="#888888", anchor="center"),
         ]
 
-        # Rectángulos clickeables invisibles (siempre al tope de la pila)
         def _click_historia(e): self.seleccionar_modo("Historia")
         def _click_infinito(e): self.seleccionar_modo("Infinito")
         r_h = self.canvas.create_rectangle(55, 310, 565, 372, fill="", outline="", tags="clickarea")
@@ -336,10 +324,8 @@ class VentanaConfiguracion:
         for tid in self._modo_text_ids["Infinito"]:
             self.canvas.tag_bind(tid, "<Button-1>", _click_infinito)
 
-        # Ahora sí dibujamos los highlights con el estado correcto
         self._redraw_modo_btns()
 
-        # ── PASO 5: Botones de dificultad (widgets tk, flotan sobre canvas) ─
         self._btns_dif = []
         for i, lbl in enumerate(["Fácil", "Medio", "Ultra"]):
             y   = self._panel_dif_y[i] + 2
@@ -355,7 +341,6 @@ class VentanaConfiguracion:
             self._btns_dif[i].config(command=lambda n=i+1: self.seleccionar_dificultad(n))
         self._apply_dif_style()
 
-        # ── PASO 6: Botón jugar ───────────────────────────────────────────
         tk.Button(self.root,
             text="🔥 IR A COPAR EL PASILLO 🔥",
             font=("Courier", 12, "bold"),
@@ -365,14 +350,13 @@ class VentanaConfiguracion:
             command=self.iniciar_juego
         ).place(x=42, y=492, width=536, height=48)
 
-    # ── Helpers PIL ───────────────────────────────────────────────────────
     def _pegar_panel(self, panel_pil, x, y):
         ph = ImageTk.PhotoImage(panel_pil)
         self._refs.append(ph)
         self.canvas.create_image(x, y, anchor="nw", image=ph)
 
     def _redraw_dif_rows(self):
-        colors = {1: (30,80,30), 2: (130,90,10), 3: (100,15,10)}
+        colors  = {1: (30,80,30), 2: (130,90,10), 3: (100,15,10)}
         borders = {1: "#32C850", 2: _GOLD, 3: "#C83220"}
         for i in range(3):
             nivel  = i + 1
@@ -407,18 +391,14 @@ class VentanaConfiguracion:
             self._refs.append(ph)
             if key in self._modo_ids:
                 self.canvas.delete(self._modo_ids[key])
-            self._modo_ids[key] = self.canvas.create_image(
-                55, y, anchor="nw", image=ph)
+            self._modo_ids[key] = self.canvas.create_image(55, y, anchor="nw", image=ph)
 
-        # Subir textos y áreas clickeables AL TOPE siempre,
-        # para que queden por encima de los highlights PIL recién dibujados
         if hasattr(self, "_modo_text_ids"):
             for key in ("Historia", "Infinito"):
                 for tid in self._modo_text_ids[key]:
                     self.canvas.tag_raise(tid)
         self.canvas.tag_raise("clickarea")
 
-    # ── Estilos activo/inactivo ───────────────────────────────────────────
     def _apply_dif_style(self):
         estilos = {1: ("#2ecc71","black"), 2: ("#f1c40f","black"), 3: ("#e74c3c","white")}
         for i, btn in enumerate(self._btns_dif):
@@ -430,15 +410,14 @@ class VentanaConfiguracion:
                 btn.config(bg="#222222", fg="#666666")
 
     def _apply_modo_style(self):
-        activo   = (255, 255, 200)   # casi blanco cálido
-        inactivo = (100,  90,  60)   # marrón apagado
+        activo   = (255, 255, 200)
+        inactivo = (100,  90,  60)
         for key, color in [("Historia", activo if self.modo_elegido == "Historia" else inactivo),
                             ("Infinito", activo if self.modo_elegido == "Infinito" else inactivo)]:
             hex_col = "#{:02x}{:02x}{:02x}".format(*color)
             for tid in self._modo_text_ids[key]:
                 self.canvas.itemconfig(tid, fill=hex_col)
 
-    # ── Callbacks ─────────────────────────────────────────────────────────
     def seleccionar_dificultad(self, d):
         self.dificultad_elegida = d
         self._redraw_dif_rows()
@@ -446,8 +425,8 @@ class VentanaConfiguracion:
 
     def seleccionar_modo(self, modo):
         self.modo_elegido = modo
-        self._redraw_modo_btns()   # redibuja highlight PIL
-        self._apply_modo_style()   # actualiza color del texto canvas
+        self._redraw_modo_btns()
+        self._apply_modo_style()
 
     def iniciar_juego(self):
         global ULTIMA_DIFICULTAD, ULTIMO_MODO
@@ -462,47 +441,79 @@ class VentanaConfiguracion:
 # ARENA DE ENCUENTROS
 # =========================================================================
 
+# Velocidad de la animación de fondo: ms entre cada frame.
+# 100ms = ~10fps, se ve fluido sin ser mareante.
+_MS_FONDO = 100
+
+
+def _cargar_frames_carpeta(nombre_carpeta, prefijo_archivo, ancho, alto, ultimo=61):
+    """
+    Carga todos los frames de una carpeta con el patrón:
+      <prefijo_archivo>00001.png, 00005.png, 00009.png ... 000XX.png
+    (paso de 4)
+    - fondo_normal: ultimo=61  → 16 frames (1..61)
+    - fondo_final:  ultimo=65  → 17 frames (1..65)
+    Devuelve una lista de ImageTk.PhotoImage listos para usar.
+    """
+    frames = []
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), nombre_carpeta)
+    if not os.path.exists(base):
+        print(f"⚠️  Carpeta no encontrada: {base}")
+        return frames
+
+    # Números: 1, 5, 9, 13, ... hasta `ultimo`  →  paso de 4
+    numeros = range(1, ultimo + 1, 4)
+    for n in numeros:
+        nombre = f"{prefijo_archivo}{n:05d}.png"
+        ruta   = os.path.join(base, nombre)
+        try:
+            img = Image.open(ruta).resize((ancho, alto), Image.Resampling.LANCZOS)
+            frames.append(ImageTk.PhotoImage(img))
+        except Exception as e:
+            print(f"⚠️  No se pudo cargar {nombre}: {e}")
+            # Si falta un frame, simplemente lo salteamos (no rompemos el bucle)
+    return frames
+
+
 class ArenaPokemon:
     def __init__(self, dificultad, modo):
         self.dificultad = dificultad
-        self.modo = modo
-        self.ronda_actual = 1
+        self.modo       = modo
+        self.ronda_actual    = 1
         self.fase_jefe_final = False
 
         self.mod_vida = 1.0
         self.mod_daño = 1.0
-        self.dif_str = "medio"
+        self.dif_str  = "medio"
 
+        # ── Estado del fondo animado ──────────────────────────────────────
+        self._frames_fondo    = []   # lista de PhotoImage del fondo actual
+        self._frame_fondo_idx = 0
+        self._after_fondo_id  = None
+        self._fondo_ref       = None  # ancla del frame visible
+
+        # ── Héroe según dificultad ────────────────────────────────────────
         if dificultad == 1:
             self.dif_str = "facil"
             self.heroe = Jugador(
                 "Robertito", 140,
                 Arma("Sifón con Escudo Quilmes", 16, 28),
-                Armadura("Tapa de Olla Nivel 1", 3),
-                3,
-                "nomo_facil_armadura.png",
-                "nomo_facil_sin_armadura.png"
-            )
+                Armadura("Tapa de Olla Nivel 1", 3), 3,
+                "nomo_facil_armadura.png", "nomo_facil_sin_armadura.png")
         elif dificultad == 2:
             self.dif_str = "medio"
             self.heroe = Jugador(
                 "Robertito", 110,
                 Arma("Sifón Clásico", 14, 25),
-                Armadura("Tapa de Olla de Aluminio", 3),
-                2,
-                "nomo_medio_armadura.png",
-                "nomo_medio_sin_armadura.png"
-            )
+                Armadura("Tapa de Olla de Aluminio", 3), 2,
+                "nomo_medio_armadura.png", "nomo_medio_sin_armadura.png")
         else:
             self.dif_str = "dificil"
             self.heroe = Jugador(
                 "Robertito", 105,
                 Arma("Machete Oxidado de Mano", 14, 28),
-                None,
-                2,
-                "nomo_dificil.png",
-                "nomo_dificil.png"
-            )
+                None, 2,
+                "nomo_dificil.png", "nomo_dificil.png")
 
         self.generar_nuevo_enemigo()
 
@@ -512,7 +523,7 @@ class ArenaPokemon:
         self.ventana.resizable(False, False)
 
         self.anclas = {}
-        self.X_ORIGEN_HEROE, self.Y_HEROE = 220, 249
+        self.X_ORIGEN_HEROE,  self.Y_HEROE   = 220, 249
         self.X_ORIGEN_ENEMIGO, self.Y_ENEMIGO = 603, 149
 
         mixer.init()
@@ -522,6 +533,8 @@ class ArenaPokemon:
         self.crear_arena_grafica()
         self.actualizar_pantalla()
 
+    # ── Generación de enemigo ─────────────────────────────────────────────
+
     def generar_nuevo_enemigo(self):
         if self.modo == "Historia" and self.ronda_actual == 6:
             self.fase_jefe_final = True
@@ -530,23 +543,21 @@ class ArenaPokemon:
             tipo_enano = random.choice([EnanoManija, EnanoComunacho, EnanoMorfi])
             self.enemigo = tipo_enano(self.dif_str, self.mod_vida, self.mod_daño)
 
+    # ── Audio ─────────────────────────────────────────────────────────────
+
     def cargar_sistema_audio(self):
-        try: self.sound_hace_daño = mixer.Sound("hace_daño.mp3")
-        except: self.sound_hace_daño = None
-        try: self.sound_recibe_daño = mixer.Sound("recibe_daño.mp3")
-        except: self.sound_recibe_daño = None
-        try: self.sound_curacion = mixer.Sound("curacion.mp3")
-        except: self.sound_curacion = None
-        try: self.sound_nop = mixer.Sound("nop.mp3")
-        except: self.sound_nop = None
-        try: self.sound_romper_armadura = mixer.Sound("romper_armadura.mp3")
-        except: self.sound_romper_armadura = None
-        try: self.sound_esquivar = mixer.Sound("esquivar.mp3")
-        except: self.sound_esquivar = None
-        try: self.sound_muerte = mixer.Sound("muerte.mp3")
-        except: self.sound_muerte = None
-        try: self.sound_pasar_ronda = mixer.Sound("pasaste_ronda.mp3")
-        except: self.sound_pasar_ronda = None
+        def _s(nombre):
+            try:    return mixer.Sound(nombre)
+            except: return None
+        self.sound_hace_daño      = _s("hace_daño.mp3")
+        self.sound_recibe_daño    = _s("recibe_daño.mp3")
+        self.sound_curacion       = _s("curacion.mp3")
+        self.sound_nop            = _s("nop.mp3")
+        self.sound_romper_armadura= _s("romper_armadura.mp3")
+        self.sound_esquivar       = _s("esquivar.mp3")
+        self.sound_muerte         = _s("muerte.mp3")
+        self.sound_pasar_ronda    = _s("pasaste_ronda.mp3")
+        self.sound_obtener_item   = _s("obtener_item.mp3")
 
     def reproducir_musica_ambiente(self):
         try:
@@ -563,92 +574,180 @@ class ArenaPokemon:
         except:
             pass
 
-    def cargar_y_anclar(self, ruta, nombre_clave, ancho=None, alto=None):
+    # ── Carga de imágenes ─────────────────────────────────────────────────
+
+    def cargar_y_anclar(self, ruta, clave, ancho, alto):
         try:
-            img_pil = Image.open(ruta)
-            if ancho and alto:
-                img_pil = img_pil.resize((ancho, alto), Image.Resampling.LANCZOS)
-            self.anclas[nombre_clave] = ImageTk.PhotoImage(img_pil)
-            return self.anclas[nombre_clave]
-        except:
+            img = Image.open(ruta).resize((ancho, alto), Image.Resampling.LANCZOS)
+            ph  = ImageTk.PhotoImage(img)
+            self.anclas[clave] = ph
+            return ph
+        except Exception as e:
+            print(f"⚠️  No se pudo cargar {ruta}: {e}")
             return None
 
+    # ── Fondo animado ─────────────────────────────────────────────────────
+
+    def _detener_fondo(self):
+        """Cancela el loop de animación del fondo si está corriendo."""
+        if self._after_fondo_id is not None:
+            try:
+                self.ventana.after_cancel(self._after_fondo_id)
+            except Exception:
+                pass
+            self._after_fondo_id = None
+
+    def _iniciar_fondo_animado(self, frames):
+        """Arranca (o reinicia) la animación con la lista de frames dada."""
+        self._detener_fondo()
+        self._frames_fondo    = frames
+        self._frame_fondo_idx = 0
+        if self._frames_fondo:
+            self._tick_fondo()
+
+    def _tick_fondo(self):
+        """Un tick del loop: muestra el frame actual y programa el siguiente."""
+        if not self._frames_fondo:
+            return
+        ph = self._frames_fondo[self._frame_fondo_idx]
+        if ph is not None:
+            try:
+                self.canvas_escenario.itemconfig(self._img_fondo_id, image=ph)
+                self._fondo_ref = ph   # ancla → el GC no destruye el PhotoImage
+            except tk.TclError:
+                return   # el canvas ya fue destruido → salimos limpio
+        self._frame_fondo_idx = (self._frame_fondo_idx + 1) % len(self._frames_fondo)
+        self._after_fondo_id  = self.ventana.after(_MS_FONDO, self._tick_fondo)
+
+    # ── Construcción de la arena ──────────────────────────────────────────
+
     def crear_arena_grafica(self):
-        self.canvas_escenario = tk.Canvas(self.ventana, width=750, height=360, highlightthickness=0)
+        self.canvas_escenario = tk.Canvas(self.ventana, width=750, height=360,
+                                          highlightthickness=0)
         self.canvas_escenario.place(x=0, y=0)
 
-        ruta_fondo = "fondo_final.png" if self.fase_jefe_final else "fondo.png"
-        self.img_fondo = self.cargar_y_anclar(ruta_fondo, f"fondo_rd_{self.ronda_actual}", 750, 360)
+        # Creamos el ítem de fondo vacío (siempre en la posición -1, abajo de todo)
+        self._img_fondo_id = self.canvas_escenario.create_image(375, 180, anchor="center")
 
-        if self.img_fondo:
-            self.canvas_escenario.create_image(375, 180, image=self.img_fondo)
+        if self.fase_jefe_final:
+            # ── Fondo final animado ───────────────────────────────────────
+            frames = _cargar_frames_carpeta(
+                "fondo_final",          # nombre de la carpeta
+                "fondo_final",          # prefijo de los archivos
+                750, 360, ultimo=65)    # 17 frames: 1, 5, 9, ... 65
+            if frames:
+                self._iniciar_fondo_animado(frames)
+            else:
+                # Fallback: imagen estática si no hay carpeta
+                img_estatica = self.cargar_y_anclar(
+                    "fondo_final.png", f"fondo_rd_{self.ronda_actual}", 750, 360)
+                if img_estatica:
+                    self.canvas_escenario.itemconfig(
+                        self._img_fondo_id, image=img_estatica)
+                else:
+                    self.canvas_escenario.configure(bg="#2c3e50")
         else:
-            self.canvas_escenario.configure(bg="#2c3e50" if self.fase_jefe_final else "#eae6d8")
+            # ── Fondo normal animado ──────────────────────────────────────
+            frames = _cargar_frames_carpeta(
+                "fondo_normal",         # nombre de la carpeta
+                "fondo_normal",         # prefijo de los archivos
+                750, 360)
+            if frames:
+                self._iniciar_fondo_animado(frames)
+            else:
+                # Fallback: imagen estática
+                img_estatica = self.cargar_y_anclar(
+                    "fondo.png", f"fondo_rd_{self.ronda_actual}", 750, 360)
+                if img_estatica:
+                    self.canvas_escenario.itemconfig(
+                        self._img_fondo_id, image=img_estatica)
+                else:
+                    self.canvas_escenario.configure(bg="#eae6d8")
 
-        self.card_enano = tk.Canvas(self.ventana, width=260, height=75, bg="#fbf9f0", bd=2, relief="solid", highlightthickness=0)
+        # ── Cards de estado ───────────────────────────────────────────────
+        self.card_enano = tk.Canvas(self.ventana, width=260, height=75,
+                                    bg="#fbf9f0", bd=2, relief="solid", highlightthickness=0)
         self.card_enano.place(x=40, y=30)
-        self.lbl_name_enano = tk.Label(self.card_enano, text=f"{self.enemigo.nombre.upper()}", font=("Courier", 11, "bold"), bg="#fbf9f0")
+        self.lbl_name_enano = tk.Label(self.card_enano,
+            text=self.enemigo.nombre.upper(), font=("Courier", 11, "bold"), bg="#fbf9f0")
         self.lbl_name_enano.place(x=10, y=8)
-        self.lbl_hp_enano = tk.Label(self.card_enano, text="", font=("Courier", 9, "bold"), bg="#fbf9f0")
+        self.lbl_hp_enano = tk.Label(self.card_enano,
+            text="", font=("Courier", 9, "bold"), bg="#fbf9f0")
         self.lbl_hp_enano.place(x=10, y=30)
 
-        self.card_nomo = tk.Canvas(self.ventana, width=260, height=90, bg="#fbf9f0", bd=2, relief="solid", highlightthickness=0)
+        self.card_nomo = tk.Canvas(self.ventana, width=260, height=90,
+                                   bg="#fbf9f0", bd=2, relief="solid", highlightthickness=0)
         self.card_nomo.place(x=450, y=240)
-        self.lbl_name_nomo = tk.Label(self.card_nomo, text=f"{self.heroe.nombre.upper()}", font=("Courier", 11, "bold"), bg="#fbf9f0")
+        self.lbl_name_nomo = tk.Label(self.card_nomo,
+            text=self.heroe.nombre.upper(), font=("Courier", 11, "bold"), bg="#fbf9f0")
         self.lbl_name_nomo.place(x=10, y=8)
-        self.lbl_hp_nomo = tk.Label(self.card_nomo, text="", font=("Courier", 9, "bold"), bg="#fbf9f0")
+        self.lbl_hp_nomo = tk.Label(self.card_nomo,
+            text="", font=("Courier", 9, "bold"), bg="#fbf9f0")
         self.lbl_hp_nomo.place(x=10, y=30)
-        self.lbl_alfajores_count = tk.Label(self.card_nomo, text="", font=("Courier", 8, "italic"), bg="#fbf9f0", fg="#7f8c8d")
+        self.lbl_alfajores_count = tk.Label(self.card_nomo,
+            text="", font=("Courier", 8, "italic"), bg="#fbf9f0", fg="#7f8c8d")
         self.lbl_alfajores_count.place(x=10, y=65)
 
-        s_g_base = self.heroe.sprite_base
-        s_g_roto = self.heroe.sprite_roto
-        self.img_nomo_obj = self.cargar_y_anclar(s_g_base, f"g_b_{self.ronda_actual}", 224, 224)
-        self.img_nomo_broken_obj = self.cargar_y_anclar(s_g_roto, f"g_r_{self.ronda_actual}", 224, 224)
+        # ── Sprites ───────────────────────────────────────────────────────
+        self.img_nomo_obj = self.cargar_y_anclar(
+            self.heroe.sprite_base, f"g_b_{self.ronda_actual}", 224, 224)
+        self.img_nomo_broken_obj = self.cargar_y_anclar(
+            self.heroe.sprite_roto, f"g_r_{self.ronda_actual}", 224, 224)
 
         if self.img_nomo_obj and not self.heroe.armadura_rota:
-            self.sprite_nomo_id = self.canvas_escenario.create_image(self.X_ORIGEN_HEROE, self.Y_HEROE, image=self.img_nomo_obj)
+            self.sprite_nomo_id = self.canvas_escenario.create_image(
+                self.X_ORIGEN_HEROE, self.Y_HEROE, image=self.img_nomo_obj)
         elif self.img_nomo_broken_obj:
-            self.sprite_nomo_id = self.canvas_escenario.create_image(self.X_ORIGEN_HEROE, self.Y_HEROE, image=self.img_nomo_broken_obj)
+            self.sprite_nomo_id = self.canvas_escenario.create_image(
+                self.X_ORIGEN_HEROE, self.Y_HEROE, image=self.img_nomo_broken_obj)
         else:
             self.sprite_nomo_id = self.canvas_escenario.create_rectangle(
-                self.X_ORIGEN_HEROE - 40, self.Y_HEROE - 40,
-                self.X_ORIGEN_HEROE + 40, self.Y_HEROE + 40, fill="#e67e22")
+                self.X_ORIGEN_HEROE-40, self.Y_HEROE-40,
+                self.X_ORIGEN_HEROE+40, self.Y_HEROE+40, fill="#e67e22")
 
-        self.img_enano_obj = self.cargar_y_anclar(self.enemigo.sprite_base, f"e_b_{self.ronda_actual}", 205, 205)
-        self.img_enano_broken_obj = self.cargar_y_anclar(self.enemigo.sprite_roto, f"e_r_{self.ronda_actual}", 205, 205)
+        self.img_enano_obj = self.cargar_y_anclar(
+            self.enemigo.sprite_base, f"e_b_{self.ronda_actual}", 205, 205)
+        self.img_enano_broken_obj = self.cargar_y_anclar(
+            self.enemigo.sprite_roto, f"e_r_{self.ronda_actual}", 205, 205)
 
         if self.img_enano_obj:
-            self.sprite_enano_id = self.canvas_escenario.create_image(self.X_ORIGEN_ENEMIGO, self.Y_ENEMIGO, image=self.img_enano_obj)
+            self.sprite_enano_id = self.canvas_escenario.create_image(
+                self.X_ORIGEN_ENEMIGO, self.Y_ENEMIGO, image=self.img_enano_obj)
         else:
             self.sprite_enano_id = self.canvas_escenario.create_rectangle(
-                self.X_ORIGEN_ENEMIGO - 40, self.Y_ENEMIGO - 40,
-                self.X_ORIGEN_ENEMIGO + 40, self.Y_ENEMIGO + 40, fill="#bdc3c7")
+                self.X_ORIGEN_ENEMIGO-40, self.Y_ENEMIGO-40,
+                self.X_ORIGEN_ENEMIGO+40, self.Y_ENEMIGO+40, fill="#bdc3c7")
 
         self.img_guayma = self.cargar_y_anclar("guaymallen.png", "guaymallen", 50, 50)
 
+        # ── Panel de diálogo y botones ────────────────────────────────────
         self.frame_historial = tk.Frame(self.ventana, bg="#253446", bd=4, relief="ridge")
         self.frame_historial.place(x=10, y=380, width=440, height=150)
-
         self.txt_dialogo = tk.Text(self.frame_historial, bg="#253446", fg="white",
-                                   font=("Courier", 11, "bold"), bd=0, wrap="word", padx=12, pady=12)
+                                   font=("Courier", 11, "bold"), bd=0, wrap="word",
+                                   padx=12, pady=12)
         self.txt_dialogo.pack(fill="both", expand=True)
 
         self.frame_comandos = tk.Frame(self.ventana, bg="white", bd=4, relief="ridge")
         self.frame_comandos.place(x=460, y=380, width=280, height=150)
-
-        self.btn_lucha = tk.Button(self.frame_comandos, text="⚔️ LUCHA", font=("Courier", 14, "bold"),
-                                   bg="white", fg="black", bd=0, command=self.ejecutar_ataque_jugador)
+        self.btn_lucha = tk.Button(self.frame_comandos, text="⚔️ LUCHA",
+                                   font=("Courier", 14, "bold"), bg="white", fg="black",
+                                   bd=0, command=self.ejecutar_ataque_jugador)
         self.btn_lucha.place(x=10, y=15, width=250, height=50)
-
-        self.btn_mochila = tk.Button(self.frame_comandos, text="🎒 MOCHILA", font=("Courier", 14, "bold"),
-                                     bg="white", fg="black", bd=0, command=self.ejecutar_curacion_jugador)
+        self.btn_mochila = tk.Button(self.frame_comandos, text="🎒 MOCHILA",
+                                     font=("Courier", 14, "bold"), bg="white", fg="black",
+                                     bd=0, command=self.ejecutar_curacion_jugador)
         self.btn_mochila.place(x=10, y=75, width=250, height=50)
 
-        msg_inicial = f"¡RONDA {self.ronda_actual}! Un {self.enemigo.nombre} te corta el pasillo.\n¿Qué hace tu Gnomo?"
         if self.fase_jefe_final:
-            msg_inicial = "🔥 ¡EL BARRIO ESTÁ TOTALMENTE PRENDIDO FUEGO! 🔥\nEL JEFE FALOPINO sale a reventarte.\n¿Qué hará tu Gnomo?"
-        self.escribir_dialogo(msg_inicial)
+            msg = ("🔥 ¡EL BARRIO ESTÁ TOTALMENTE PRENDIDO FUEGO! 🔥\n"
+                   "EL JEFE FALOPINO sale a reventarte.\n¿Qué hará tu Gnomo?")
+        else:
+            msg = (f"¡RONDA {self.ronda_actual}! Un {self.enemigo.nombre} te corta el pasillo.\n"
+                   f"¿Qué hace tu Gnomo?")
+        self.escribir_dialogo(msg)
+
+    # ── Pantalla ──────────────────────────────────────────────────────────
 
     def escribir_dialogo(self, texto):
         self.txt_dialogo.config(state="normal")
@@ -657,7 +756,7 @@ class ArenaPokemon:
         self.txt_dialogo.config(state="disabled")
 
     def actualizar_pantalla(self):
-        self.lbl_name_enano.config(text=f"{self.enemigo.nombre.upper()}")
+        self.lbl_name_enano.config(text=self.enemigo.nombre.upper())
         self.lbl_hp_nomo.config(text=f"PS: {self.heroe.obtener_salud():.1f} / {self.heroe.salud_maxima}")
         self.lbl_hp_enano.config(text=f"PS: {self.enemigo.obtener_salud():.1f} / {self.enemigo.salud_maxima}")
         self.lbl_alfajores_count.config(text=f"Guaymalléns: {self.heroe.obtener_cantidad_alfajores()} 🍪")
@@ -665,58 +764,59 @@ class ArenaPokemon:
         self.card_enano.delete("bar")
         self.card_nomo.delete("bar")
 
-        pct_enano = max(0.0, self.enemigo.obtener_salud() / self.enemigo.salud_maxima)
-        color_enano = "#2ecc71" if pct_enano > 0.2 else "#e74c3c"
+        pct_e = max(0.0, self.enemigo.obtener_salud() / self.enemigo.salud_maxima)
+        col_e = "#2ecc71" if pct_e > 0.2 else "#e74c3c"
         self.card_enano.create_rectangle(10, 52, 250, 64, fill="#bdc3c7", outline="black", tags="bar")
-        self.card_enano.create_rectangle(10, 52, 10 + (240 * pct_enano), 64, fill=color_enano, outline="", tags="bar")
+        self.card_enano.create_rectangle(10, 52, 10 + int(240*pct_e), 64, fill=col_e, outline="", tags="bar")
 
-        pct_nomo = max(0.0, self.heroe.obtener_salud() / self.heroe.salud_maxima)
-        color_nomo = "#2ecc71" if pct_nomo > 0.2 else "#e74c3c"
+        pct_n = max(0.0, self.heroe.obtener_salud() / self.heroe.salud_maxima)
+        col_n = "#2ecc71" if pct_n > 0.2 else "#e74c3c"
         self.card_nomo.create_rectangle(10, 50, 250, 62, fill="#bdc3c7", outline="black", tags="bar")
-        self.card_nomo.create_rectangle(10, 50, 10 + (240 * pct_nomo), 62, fill=color_nomo, outline="", tags="bar")
+        self.card_nomo.create_rectangle(10, 50, 10 + int(240*pct_n), 62, fill=col_n, outline="", tags="bar")
 
         if self.heroe.armadura_rota and self.img_nomo_broken_obj:
             self.canvas_escenario.itemconfig(self.sprite_nomo_id, image=self.img_nomo_broken_obj)
-
         if self.enemigo.armadura_rota and self.img_enano_broken_obj:
             self.canvas_escenario.itemconfig(self.sprite_enano_id, image=self.img_enano_broken_obj)
 
-    def animar_avance_heroe(self, x_actual):
-        X_LIMITE = 460
-        if x_actual < X_LIMITE:
-            x_actual += 20
-            self.canvas_escenario.coords(self.sprite_nomo_id, x_actual, self.Y_HEROE)
-            self.ventana.after(15, lambda: self.animar_avance_heroe(x_actual))
+    # ── Animaciones de combate ────────────────────────────────────────────
+
+    def animar_avance_heroe(self, x):
+        if x < 460:
+            x += 20
+            self.canvas_escenario.coords(self.sprite_nomo_id, x, self.Y_HEROE)
+            self.ventana.after(15, lambda: self.animar_avance_heroe(x))
         else:
             if self.sound_hace_daño: self.sound_hace_daño.play()
             self.concluir_ataque_jugador()
 
-    def animar_regreso_heroe(self, x_actual):
-        if x_actual > self.X_ORIGEN_HEROE:
-            x_actual -= 20
-            self.canvas_escenario.coords(self.sprite_nomo_id, x_actual, self.Y_HEROE)
-            self.ventana.after(15, lambda: self.animar_regreso_heroe(x_actual))
+    def animar_regreso_heroe(self, x):
+        if x > self.X_ORIGEN_HEROE:
+            x -= 20
+            self.canvas_escenario.coords(self.sprite_nomo_id, x, self.Y_HEROE)
+            self.ventana.after(15, lambda: self.animar_regreso_heroe(x))
         else:
             self.canvas_escenario.coords(self.sprite_nomo_id, self.X_ORIGEN_HEROE, self.Y_HEROE)
 
-    def animar_avance_enano(self, x_actual):
-        X_LIMITE = 360
-        if x_actual > X_LIMITE:
-            x_actual -= 20
-            self.canvas_escenario.coords(self.sprite_enano_id, x_actual, self.Y_ENEMIGO)
-            self.ventana.after(15, lambda: self.animar_avance_enano(x_actual))
+    def animar_avance_enano(self, x):
+        if x > 360:
+            x -= 20
+            self.canvas_escenario.coords(self.sprite_enano_id, x, self.Y_ENEMIGO)
+            self.ventana.after(15, lambda: self.animar_avance_enano(x))
         else:
             if self.sound_recibe_daño: self.sound_recibe_daño.play()
             self.concluir_turno_enemigo()
-            self.ventana.after(100, lambda: self.animar_regreso_enano(x_actual))
+            self.ventana.after(100, lambda: self.animar_regreso_enano(x))
 
-    def animar_regreso_enano(self, x_actual):
-        if x_actual < self.X_ORIGEN_ENEMIGO:
-            x_actual += 20
-            self.canvas_escenario.coords(self.sprite_enano_id, x_actual, self.Y_ENEMIGO)
-            self.ventana.after(15, lambda: self.animar_regreso_enano(x_actual))
+    def animar_regreso_enano(self, x):
+        if x < self.X_ORIGEN_ENEMIGO:
+            x += 20
+            self.canvas_escenario.coords(self.sprite_enano_id, x, self.Y_ENEMIGO)
+            self.ventana.after(15, lambda: self.animar_regreso_enano(x))
         else:
             self.canvas_escenario.coords(self.sprite_enano_id, self.X_ORIGEN_ENEMIGO, self.Y_ENEMIGO)
+
+    # ── Acciones del jugador ──────────────────────────────────────────────
 
     def ejecutar_ataque_jugador(self):
         self.btn_lucha.config(state="disabled")
@@ -724,11 +824,10 @@ class ArenaPokemon:
         self.animar_avance_heroe(self.X_ORIGEN_HEROE)
 
     def concluir_ataque_jugador(self):
-        reporte_heroe, enemigo_muerto = self.heroe.atacar(self.enemigo, self)
-        self.escribir_dialogo(reporte_heroe)
+        reporte, enemigo_muerto = self.heroe.atacar(self.enemigo, self)
+        self.escribir_dialogo(reporte)
         self.actualizar_pantalla()
         self.animar_regreso_heroe(460)
-
         if enemigo_muerto:
             if self.sound_muerte: self.sound_muerte.play()
             self.ventana.after(1500, self.gestionar_victoria_ronda)
@@ -738,13 +837,14 @@ class ArenaPokemon:
     def ejecutar_curacion_jugador(self):
         self.btn_lucha.config(state="disabled")
         self.btn_mochila.config(state="disabled")
-
         if self.heroe.obtener_cantidad_alfajores() > 0:
             if self.sound_curacion: self.sound_curacion.play()
             if self.img_guayma:
-                item_id = self.canvas_escenario.create_image(self.X_ORIGEN_HEROE + 60, self.Y_HEROE - 30, image=self.img_guayma)
+                item_id = self.canvas_escenario.create_image(
+                    self.X_ORIGEN_HEROE+60, self.Y_HEROE-30, image=self.img_guayma)
             else:
-                item_id = self.canvas_escenario.create_text(self.X_ORIGEN_HEROE + 60, self.Y_HEROE - 30, text="🍪", font=("Arial", 16))
+                item_id = self.canvas_escenario.create_text(
+                    self.X_ORIGEN_HEROE+60, self.Y_HEROE-30, text="🍪", font=("Arial", 16))
             self.ventana.after(600, lambda: self.concluir_curacion_jugador(item_id))
         else:
             if self.sound_nop: self.sound_nop.play()
@@ -763,10 +863,9 @@ class ArenaPokemon:
             self.animar_avance_enano(self.X_ORIGEN_ENEMIGO)
 
     def concluir_turno_enemigo(self):
-        reporte_rival, heroe_muerto = self.enemigo.atacar(self.heroe, self)
-        self.escribir_dialogo(reporte_rival)
+        reporte, heroe_muerto = self.enemigo.atacar(self.heroe, self)
+        self.escribir_dialogo(reporte)
         self.actualizar_pantalla()
-
         if heroe_muerto:
             self.ventana.after(1500, self.gestionar_game_over)
         else:
@@ -776,55 +875,59 @@ class ArenaPokemon:
                 self.btn_mochila.config(state="normal")
             ])
 
+    # ── Gestión de rondas ─────────────────────────────────────────────────
+
+    def _destruir_arena(self):
+        """Para el fondo y destruye todos los widgets de la arena actual."""
+        self._detener_fondo()
+        self.canvas_escenario.destroy()
+        self.card_enano.destroy()
+        self.card_nomo.destroy()
+        self.frame_historial.destroy()
+        self.frame_comandos.destroy()
+
     def gestionar_victoria_ronda(self):
         self.heroe.ganar_alfajor()
 
         if self.modo == "Historia" and self.fase_jefe_final:
+            self._detener_fondo()
             mixer.music.stop()
             self.ventana.destroy()
             PantallaFinal(victoria=True, hordas=self.ronda_actual, modo=self.modo)
-        else:
-            if self.sound_pasar_ronda: self.sound_pasar_ronda.play()
+            return
 
-            self.ronda_actual += 1
-            msg = f"🏆 ¡Mataste al enano! Sumás +1 Guaymallén 🍪.\n⚠️ Recordá que tu escudo NO se cura solo, seguís con la armadura gastada..."
+        if self.sound_pasar_ronda: self.sound_pasar_ronda.play()
 
-            if self.modo == "Historia" and self.ronda_actual == 6:
-                msg = ("🏆 ¡Limpiaste las 5 hordas de lacayos!\n\n"
-                       "🛡 ¡TE ENCONTRÁS UN ESCUDO EN EL PISO!\n"
-                       "Robertito se lo pone encima y queda blindado\n"
-                       "para aguantar los paravalanchas del JEFE FALOPINO...")
+        self.ronda_actual += 1
+        msg = (f"🏆 ¡Mataste al enano! Sumás +1 Guaymallén 🍪.\n"
+               f"⚠️ Recordá que tu escudo NO se cura solo, seguís con la armadura gastada...")
 
-                self.heroe.armadura_rota = False
+        if self.modo == "Historia" and self.ronda_actual == 6:
+            msg = ("🏆 ¡Limpiaste las 5 hordas de lacayos!\n\n"
+                   "🛡 ¡TE ENCONTRÁS UN ESCUDO EN EL PISO!\n"
+                   "Robertito se lo pone encima y queda blindado\n"
+                   "para aguantar los paravalanchas del JEFE FALOPINO...")
+            self.heroe.armadura_rota = False
+            if self.dificultad == 1:
+                self.heroe._armadura_equipada = Armadura("Tapa de Olla Nivel 1", 3)
+            elif self.dificultad == 2:
+                self.heroe._armadura_equipada = Armadura("Tapa de Olla de Aluminio", 3)
+            else:
+                self.heroe._armadura_equipada = Armadura("Portón de Reja Blindado", 4)
+                self.heroe.sprite_base = "nomo_dificil_armadura.png"
+                self.heroe.sprite_roto = "nomo_dificil.png"
 
-                if self.dificultad == 1:
-                    self.heroe._armadura_equipada = Armadura("Tapa de Olla Nivel 1", 3)
-                elif self.dificultad == 2:
-                    self.heroe._armadura_equipada = Armadura("Tapa de Olla de Aluminio", 3)
-                else:
-                    self.heroe._armadura_equipada = Armadura("Portón de Reja Blindado", 4)
-                    self.heroe.sprite_base = "nomo_dificil_armadura.png"
-                    self.heroe.sprite_roto = "nomo_dificil.png"
-                    self.img_nomo_obj = self.cargar_y_anclar("nomo_dificil_armadura.png", "g_b_r6", 224, 224)
-                    self.img_nomo_broken_obj = self.cargar_y_anclar("nomo_dificil.png", "g_r_r6", 224, 224)
-                    if self.img_nomo_obj:
-                        self.canvas_escenario.itemconfig(self.sprite_nomo_id, image=self.img_nomo_obj)
+        if self.sound_obtener_item: self.sound_obtener_item.play()
+        messagebox.showinfo("PRÓXIMA ONDA", msg)
 
-            messagebox.showinfo("PRÓXIMA ONDA", msg)
-
-            self.generar_nuevo_enemigo()
-            self.reproducir_musica_ambiente()
-
-            self.canvas_escenario.destroy()
-            self.card_enano.destroy()
-            self.card_nomo.destroy()
-            self.frame_historial.destroy()
-            self.frame_comandos.destroy()
-
-            self.crear_arena_grafica()
-            self.actualizar_pantalla()
+        self._destruir_arena()
+        self.generar_nuevo_enemigo()
+        self.reproducir_musica_ambiente()
+        self.crear_arena_grafica()
+        self.actualizar_pantalla()
 
     def gestionar_game_over(self):
+        self._detener_fondo()
         mixer.music.stop()
         self.ventana.destroy()
         PantallaFinal(victoria=False, hordas=self.ronda_actual, modo=self.modo)
@@ -842,15 +945,14 @@ class PantallaFinal:
         self.root.resizable(False, False)
         self.root.configure(bg="#0b0f19")
 
-        self.victoria = victoria
-        self.hordas = hordas
-        self.modo = modo
+        self.victoria     = victoria
+        self.hordas       = hordas
+        self.modo         = modo
         self.anclas_final = {}
 
         mixer.init()
         try:
-            if victoria: mixer.music.load("victoria.mp3")
-            else: mixer.music.load("derrota.mp3")
+            mixer.music.load("victoria.mp3" if victoria else "derrota.mp3")
             mixer.music.play(-1)
         except:
             pass
@@ -882,7 +984,8 @@ class PantallaFinal:
             return None
 
     def crear_interfaz(self):
-        canvas_render = tk.Canvas(self.root, width=750, height=350, highlightthickness=0, bg="#000000")
+        canvas_render = tk.Canvas(self.root, width=750, height=350,
+                                  highlightthickness=0, bg="#000000")
         canvas_render.place(x=0, y=0)
 
         if self.victoria:
@@ -903,15 +1006,17 @@ class PantallaFinal:
             if self.modo == "Infinito":
                 img_f = self.cargar_img_f("imagen_fin_infinito.png", "inf_bg", 750, 350)
                 if img_f: canvas_render.create_image(375, 175, image=img_f)
-
                 rec_anterior = obtener_record_maximo()
                 if self.hordas > rec_anterior:
                     guardar_nuevo_record(self.hordas)
-                    msg_rec = f"✨ ¡NUEVO RÉCORD DEL PASILLO! ✨\nLlegaste hasta la Ronda {self.hordas}.\nSuperaste tu récord viejo de {rec_anterior} rondas."
+                    msg_rec = (f"✨ ¡NUEVO RÉCORD DEL PASILLO! ✨\n"
+                               f"Llegaste hasta la Ronda {self.hordas}.\n"
+                               f"Superaste tu récord viejo de {rec_anterior} rondas.")
                 else:
-                    msg_rec = f"Llegaste hasta la Ronda {self.hordas}.\nTu récord máximo actual es de Ronda {rec_anterior}."
-
-                text_p = f"💀 FIN DEL MODO INFINITO 💀\n\n{msg_rec}\n\n¿Vas a dejar que la mafia se quede con los récords del barrio o vas a intentar de vuelta?"
+                    msg_rec = (f"Llegaste hasta la Ronda {self.hordas}.\n"
+                               f"Tu récord máximo actual es de Ronda {rec_anterior}.")
+                text_p = (f"💀 FIN DEL MODO INFINITO 💀\n\n{msg_rec}\n\n"
+                          f"¿Vas a dejar que la mafia se quede con los récords del barrio o vas a intentar de vuelta?")
                 col_txt = "#9b59b6"
             else:
                 img_f = self.cargar_img_f("imagen_derrota.png", "d_bg", 750, 350)
@@ -929,123 +1034,111 @@ class PantallaFinal:
                 )
                 col_txt = "#e74c3c"
 
-        txt_box = tk.Text(self.root, bg="#111625", fg=col_txt, font=("Courier", 10, "bold"),
-                          bd=2, relief="solid", wrap="word", padx=12, pady=8)
+        txt_box = tk.Text(self.root, bg="#111625", fg=col_txt,
+                          font=("Courier", 10, "bold"), bd=2, relief="solid",
+                          wrap="word", padx=12, pady=8)
         txt_box.place(x=20, y=365, width=710, height=180)
         txt_box.insert(tk.END, text_p)
         txt_box.config(state="disabled")
 
-        self.img_b_casa = self.cargar_img_f("boton_casa.png", "btn_c", 55, 55)
+        self.img_b_casa = self.cargar_img_f("boton_casa.png",    "btn_c", 55,  55)
         self.img_b_rest = self.cargar_img_f("boton_restart.png", "btn_r", 140, 45)
 
         if self.img_b_casa:
-            btn_casa = tk.Button(self.root, image=self.img_b_casa, bg="#0b0f19", bd=0,
-                                 activebackground="#0b0f19", command=self.ir_al_menu)
-            btn_casa.place(x=250, y=565)
+            tk.Button(self.root, image=self.img_b_casa, bg="#0b0f19", bd=0,
+                      activebackground="#0b0f19", command=self.ir_al_menu).place(x=250, y=565)
         else:
-            btn_casa = tk.Button(self.root, text="CASA", font=("Arial", 11, "bold"), command=self.ir_al_menu)
-            btn_casa.place(x=250, y=565, width=80, height=40)
+            tk.Button(self.root, text="CASA", font=("Arial", 11, "bold"),
+                      command=self.ir_al_menu).place(x=250, y=565, width=80, height=40)
 
         if self.img_b_rest:
-            btn_rest = tk.Button(self.root, image=self.img_b_rest, bg="#0b0f19", bd=0,
-                                 activebackground="#0b0f19", command=self.iniciar_restart_real)
-            btn_rest.place(x=380, y=570)
+            tk.Button(self.root, image=self.img_b_rest, bg="#0b0f19", bd=0,
+                      activebackground="#0b0f19", command=self.iniciar_restart_real).place(x=380, y=570)
         else:
-            btn_rest = tk.Button(self.root, text="REINTENTAR", font=("Arial", 11, "bold"), command=self.iniciar_restart_real)
-            btn_rest.place(x=380, y=565, width=120, height=40)
+            tk.Button(self.root, text="REINTENTAR", font=("Arial", 11, "bold"),
+                      command=self.iniciar_restart_real).place(x=380, y=565, width=120, height=40)
 
 
 # =========================================================================
-# PANTALLA DE INTRO  (61 frames a 12 fps → "tocá para continuar" → menú)
+# PANTALLA DE INTRO
 # =========================================================================
 
 class PantallaIntro:
-    TOTAL_FRAMES  = 45   # fotograma_0001 → 0133 de 3 en 3
+    TOTAL_FRAMES  = 45
     FPS           = 10
-    MS_POR_FRAME  = 77                   # 65 frames en ~5 segundos
+    MS_POR_FRAME  = 77
     CARPETA_INTRO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "intro")
 
     def __init__(self, root, al_terminar):
         self.root        = root
         self.al_terminar = al_terminar
         self._frame_idx  = 0
-        self._frames     = []            # PhotoImage pre-cargadas
-        self._refs       = []            # ancla de la imagen actual
+        self._frames     = []
+        self._refs       = []
         self._blink_id   = None
         self._after_id   = None
         self._listo      = False
         self._transicion_en_curso = False
 
-        # ── Canvas negro visible de inmediato (sin pantalla blanca) ──────
         self.canvas = tk.Canvas(root, width=_W, height=_H,
                                 highlightthickness=0, bd=0, bg="black")
         self.canvas.place(x=0, y=0)
-        root.update()   # forzamos que se pinte el fondo negro YA
-
-        # ── Texto de carga (visible mientras se pre-cargan los frames) ───
-        self._loading_id = self.canvas.create_text(
-            _W // 2, _H // 2,
-            text="Cargando intro...",
-            font=("Courier", 14, "bold"), fill="#888888", anchor="center"
-        )
         root.update()
 
-        # ── Pre-carga de todos los frames ────────────────────────────────
-        # Frames: fotograma_0001, 0004, 0007 ... 0133 (salto de 3)
-        numeros = range(1, 66)
-        for n in numeros:
+        self._loading_id = self.canvas.create_text(
+            _W // 2, _H // 2, text="Cargando intro...",
+            font=("Courier", 14, "bold"), fill="#888888", anchor="center")
+        root.update()
+
+        for n in range(1, 66):
             ruta = os.path.join(self.CARPETA_INTRO, f"fotograma{n:05d}.png")
             if not os.path.exists(ruta):
                 ruta = os.path.join(self.CARPETA_INTRO, f"fotograma{n:05d}.jpg")
             try:
                 img = Image.open(ruta).resize((_W, _H), Image.Resampling.LANCZOS)
-                ph  = ImageTk.PhotoImage(img)
-                self._frames.append(ph)
+                self._frames.append(ImageTk.PhotoImage(img))
             except Exception:
-                self._frames.append(None)   # frame faltante → lo salteamos
+                self._frames.append(None)
 
-        # Quitamos el texto de carga
         self.canvas.delete(self._loading_id)
 
-        # ── Item de imagen reutilizable ───────────────────────────────────
         primer_frame = next((f for f in self._frames if f), None)
         self._img_id = self.canvas.create_image(0, 0, anchor="nw",
                                                  image=primer_frame or "")
         if primer_frame:
             self._refs = [primer_frame]
 
-        # ── Texto "tocá para continuar" (oculto hasta que termine) ───────
         self._press_id = self.canvas.create_text(
             _W // 2, _H - 50,
             text="▶   TOCÁ CUALQUIER TECLA PARA CONTINUAR   ◀",
             font=("Courier", 11, "bold"), fill="#ffffff",
-            anchor="center", state="hidden"
-        )
+            anchor="center", state="hidden")
 
-        # ── Binds ─────────────────────────────────────────────────────────
         self.root.bind("<KeyPress>",   self._on_input)
         self.canvas.bind("<Button-1>", self._on_input)
+        self.root.after(50, self._iniciar_con_musica)
 
-        # ── Arrancamos la reproducción ────────────────────────────────────
-        self.root.after(50, self._reproducir)
-
-    # ── Reproducción ─────────────────────────────────────────────────────
+    def _iniciar_con_musica(self):
+        try:
+            mixer.init()
+            mixer.music.load("sonido_intro.mp3")
+            mixer.music.set_volume(0.8)
+            mixer.music.play(0)
+        except Exception:
+            pass
+        self._reproducir()
 
     def _reproducir(self):
         if self._frame_idx >= len(self._frames):
             self._listo = True
             self._parpadear()
             return
-
         ph = self._frames[self._frame_idx]
         if ph:
             self.canvas.itemconfig(self._img_id, image=ph)
             self._refs = [ph]
-
         self._frame_idx += 1
         self._after_id = self.root.after(self.MS_POR_FRAME, self._reproducir)
-
-    # ── Parpadeo ─────────────────────────────────────────────────────────
 
     def _parpadear(self, on=True):
         try:
@@ -1055,14 +1148,10 @@ class PantallaIntro:
             return
         self._blink_id = self.root.after(500, lambda: self._parpadear(not on))
 
-    # ── Input ─────────────────────────────────────────────────────────────
-
     def _on_input(self, event=None):
         if self._transicion_en_curso:
             return
-
         if not self._listo:
-            # Saltar al último frame
             if self._after_id:
                 self.root.after_cancel(self._after_id)
                 self._after_id = None
@@ -1073,24 +1162,17 @@ class PantallaIntro:
             self._listo = True
             self._parpadear()
             return
-
-        # Listo y el usuario presionó → transición al menú
         self._transicion_en_curso = True
         if self._blink_id:
             self.root.after_cancel(self._blink_id)
             self._blink_id = None
         self.root.unbind("<KeyPress>")
         self.canvas.unbind("<Button-1>")
-
-        # Fade out rápido antes de ir al menú
         self._fade_salida(step=0)
 
     def _fade_salida(self, step=0):
-        """Oscurece el canvas con un overlay negro y luego llama al menú."""
-        total = 10
-        if step <= total:
-            # Creamos un overlay cada vez más opaco
-            alpha_steps = [0, 30, 60, 90, 120, 150, 180, 210, 230, 245, 255]
+        alpha_steps = [0, 30, 60, 90, 120, 150, 180, 210, 230, 245, 255]
+        if step <= 10:
             a = alpha_steps[min(step, len(alpha_steps)-1)]
             overlay = Image.new("RGBA", (_W, _H), (0, 0, 0, a))
             ph = ImageTk.PhotoImage(overlay)
@@ -1101,6 +1183,10 @@ class PantallaIntro:
                 self.canvas.itemconfig(self._overlay_id, image=ph)
             self.root.after(25, lambda: self._fade_salida(step + 1))
         else:
+            try:
+                mixer.music.stop()
+            except Exception:
+                pass
             self.root.configure(bg="black")
             try:
                 self.canvas.destroy()
@@ -1115,28 +1201,25 @@ class PantallaIntro:
 # MAIN
 # =========================================================================
 
-
 def main():
-    # ── FASE 1: Intro en su propia ventana ───────────────────────────────
     intro_root = tk.Tk()
     intro_root.title("Gnomos vs Enanos")
     intro_root.geometry(f"{_W}x{_H}")
     intro_root.resizable(False, False)
     intro_root.configure(bg="black")
 
-    intro_terminada = [False]   # lista para poder mutar desde el closure
+    intro_terminada = [False]
 
     def al_terminar_intro():
         intro_terminada[0] = True
-        intro_root.destroy()   # cerramos la ventana de intro limpiamente
+        intro_root.destroy()
 
     PantallaIntro(intro_root, al_terminar=al_terminar_intro)
-    intro_root.mainloop()   # bloquea hasta que la intro termine y se destruya
+    intro_root.mainloop()
 
     if not intro_terminada[0]:
-        return   # el usuario cerró la ventana a mano
+        return
 
-    # ── FASE 2: Menú normal (VentanaConfiguracion crea su propia Tk) ─────
     menu = VentanaConfiguracion()
     menu.root.mainloop()
 
