@@ -54,85 +54,99 @@ def ruta_spr(f): return os.path.join(SPR, f)
 def ruta_fin(f): return os.path.join(FIN, f)
 def ruta_fnd(f): return os.path.join(FND, f)
 
-
 # ---- clases del juego ----
-
 class Personaje:
     def __init__(self, nombre, salud, arma, armadura=None, sprite_base="", sprite_roto="", esquiva=0):
         self.nombre = nombre
-        self.hp = salud
-        self.hp_max = salud
-        self.arma = arma
-        self.armadura = armadura
+        # 💡 Atributos privados encapsulados como pide el profe:
+        self._salud_actual = salud
+        self._salud_maxima = salud
+        self._arma_equipada = arma
+        self._armadura_equipada = armadura
+        
+        # Tus lógicas gráficas y de estado
         self.sprite_base = sprite_base
         self.sprite_roto = sprite_roto
         self.armadura_rota = False
         self.esquiva = esquiva
 
+    
     def obtener_salud(self):
-        return self.hp
+        return self._salud_actual
 
+    # 💡 El método mágico __str__ que exige la consigna
+    def __str__(self):
+        arma_txt = self._arma_equipada if self._arma_equipada else "A mano limpia"
+        return f"{self.nombre} (HP: {self._salud_actual}/{self._salud_maxima}) - Equipado con: {arma_txt}"
+
+    # 💡 Dunder add modificado
     def __add__(self, curacion):
-        self.hp = min(self.hp + curacion, self.hp_max)
+        self._salud_actual = min(self._salud_actual + curacion, self._salud_maxima)
         return self
 
     def recibir_daño(self, dmg, arena):
-        # chance de esquivar
+        # Probabilidad de esquivar (Polimorfismo base)
         if random.randint(1, 100) <= self.esquiva:
             if arena.snd_esquivar:
                 arena.snd_esquivar.play()
             return f"🤸‍♂️ ¡{self.nombre} tiró un esquive fisura en el piso!\n", False
 
         msg_arm = ""
-        if self.armadura and not self.armadura_rota:
-            dmg = self.armadura.absorber(dmg)
-            msg_arm = "🛡️ ¡Mitigado por armadura!\n"
-            if self.hp - dmg <= self.hp_max * 0.5:
+        if self._armadura_equipada and not self.armadura_rota:
+            # 💡 Usamos el método absorber de la armadura como pide la Fase 5
+            dmg = self._armadura_equipada.absorber(dmg)
+            msg_arm = f"🛡️ ¡Mitigado por {self._armadura_equipada.nombre}!\n"
+            if self._salud_actual - dmg <= self._salud_maxima * 0.5:
                 self.armadura_rota = True
-                msg_arm += "💥 ¡LA ARMADURA SE HIZO PEDAZOS!\n"
+                msg_arm += f"💥 ¡{self._armadura_equipada.nombre.upper()} SE HIZO PEDAZOS!\n"
                 if arena.snd_romper_arm:
                     arena.snd_romper_arm.play()
 
-        self.hp -= dmg
-        if self.hp <= 0:
-            self.hp = 0
+        self._salud_actual -= dmg
+        if self._salud_actual <= 0:
+            self._salud_actual = 0
             return f"{msg_arm}💀 {self.nombre} mordió el polvo.\n", True
         return f"{msg_arm}💥 {self.nombre} recibió {dmg:.1f} de daño.\n", False
 
     def atacar(self, objetivo, arena):
-        golpe = self.arma.tirar_daño()
+        # 💡 Daño calculado delegando en el arma (Composición)
+        golpe = self._arma_equipada.tirar_daño()
         reporte, murio = objetivo.recibir_daño(golpe, arena)
-        return f"⚔️ {self.nombre} atacó con {self.arma.nombre}.\n{reporte}", murio
-
+        return f"⚔️ {self.nombre} atacó con {self._arma_equipada._nombre}.\n{reporte}", murio
 
 class Jugador(Personaje):
-    def __init__(self, nombre, salud, arma, armadura=None, alfajores=2, sprite_base="", sprite_roto=""):
+    def __init__(self, nombre, salud, arma, armadura=None, alfajores=3, sprite_base="", sprite_roto=""):
+        
         super().__init__(nombre, salud, arma, armadura, sprite_base, sprite_roto, esquiva=0)
-        self.alfajores = alfajores
+        
+        self._alfajores = alfajores 
 
     def obtener_cantidad_alfajores(self):
-        return self.alfajores
+        return self._alfajores
 
     def usar_alfajor(self):
-        if self.alfajores > 0:
-            self.alfajores -= 1
-            self + 50
+        
+        if self._alfajores > 0:
+            self._alfajores -= 1
+            self + 50  
             return True
         return False
 
     def ganar_alfajor(self):
-        self.alfajores += 1
-
+        self._alfajores += 1
 
 class Arma:
     def __init__(self, nombre, dmg_min, dmg_max):
-        self.nombre = nombre
-        self.dmg_min = dmg_min
-        self.dmg_max = dmg_max
+        self._nombre = nombre
+        self._dmg_min = dmg_min
+        self._dmg_max = dmg_max
+
+    def __str__(self):
+        
+        return f"{self._nombre} (Daño: {self._dmg_min}-{self._dmg_max})"
 
     def tirar_daño(self):
-        return random.randint(self.dmg_min, self.dmg_max)
-
+        return random.randint(self._dmg_min, self._dmg_max)
 
 class Armadura:
     def __init__(self, nombre, res):
@@ -141,10 +155,8 @@ class Armadura:
 
     def absorber(self, dmg):
         return max(0, dmg - self.res)
-
  
 # ---- tipos de enanos ----
-
 class EnanoManija(Personaje):
     def __init__(self, dif, *args):
         if dif == "facil":
@@ -156,7 +168,6 @@ class EnanoManija(Personaje):
         else:
             super().__init__("Enano Manija", 55, Arma("Botella Quilmes Rota", 7, 13), Armadura("Armadura de Chapas de Coca y Mascara de Soldor", 1),
                              ruta_spr("enano_manija_dificil_armadura.png"), ruta_spr("enano_manija_dificil_sin_armadura.png"), esquiva=35)
-
 
 class EnanoComunacho(Personaje):
     def __init__(self, dif, *args):
@@ -170,7 +181,6 @@ class EnanoComunacho(Personaje):
             super().__init__("Enano Comunacho", 70, Arma("Cadena de Moto con Candado", 9, 15), Armadura("Porton de Reja Blindado", 2),
                              ruta_spr("enano_comun_dificil_armadura.png"), ruta_spr("enano_comun_dificil_sin_armadura.png"), esquiva=10)
 
-
 class EnanoMorfi(Personaje):
     def __init__(self, dif, *args):
         if dif == "facil":
@@ -182,7 +192,6 @@ class EnanoMorfi(Personaje):
         else:
             super().__init__("Enano Morfi", 100, Arma("Garrafa de Gas de 10Kg", 11, 18), Armadura("Coraza de Metal Reciclado Blindado", 3),
                              ruta_spr("enano_tanque_dificil_armadura.png"), ruta_spr("enano_tanque_dificil_sin_armadura.png"), esquiva=0)
-
 
 class JefeFalopino(Personaje):
     def __init__(self):
@@ -196,9 +205,7 @@ class JefeFalopino(Personaje):
             esquiva=10
         )
 
-
 # ---- helpers visuales ----
-
 def hacer_panel(w, h, color=(10, 6, 2), alpha=130, radio=10, borde="#D4AF37", grosor=2, glow=False):
     rgb_borde = tuple(int(borde[i:i+2], 16) for i in (1, 3, 5))
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -212,7 +219,6 @@ def hacer_panel(w, h, color=(10, 6, 2), alpha=130, radio=10, borde="#D4AF37", gr
 
 
 def cargar_frames(carpeta, prefijo, ancho, alto, hasta=61):
-    """carga los frames del fondo animado de una carpeta dada"""
     frames = []
     ruta_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), carpeta)
     if not os.path.exists(ruta_base):
@@ -228,9 +234,7 @@ def cargar_frames(carpeta, prefijo, ancho, alto, hasta=61):
             print(f"no se pudo cargar {archivo}: {e}")
     return frames
 
-
-# ---- menu principal ----
-
+# menu principal
 class MenuInicio:
     def __init__(self):
         self.root = tk.Tk()
@@ -331,6 +335,7 @@ class MenuInicio:
 
         self._redibujar_btns_modo()
 
+        #Botones de dificultad
         self._btns_dif = []
         for i, label in enumerate(["Fácil", "Medio", "Ultra"]):
             y = self._y_filas[i] + 2
@@ -343,6 +348,7 @@ class MenuInicio:
             self._btns_dif[i].config(command=lambda n=i+1: self.elegir_dificultad(n))
         self._estilo_dif()
 
+        #Botón jugar
         tk.Button(self.root, text="🔥 IR A COPAR EL PASILLO 🔥",
             font=("Courier", 12, "bold"), bg=COLOR_VERDE_BTN, fg="white",
             activebackground="#0d7a2a", activeforeground="white",
@@ -350,6 +356,7 @@ class MenuInicio:
             command=self.arrancar
         ).place(x=42, y=492, width=536, height=48)
 
+     # Manejo de las funciones PIL
     def _pegar(self, panel_pil, x, y):
         ph = ImageTk.PhotoImage(panel_pil)
         self._refs.append(ph)
@@ -387,13 +394,15 @@ class MenuInicio:
             if key in self._ids_modos:
                 self.canvas.delete(self._ids_modos[key])
             self._ids_modos[key] = self.canvas.create_image(55, y, anchor="nw", image=ph)
-
+        
+         # Subir textos y áreas clickeables AL TOPE siempre, para que queden por encima de los highlights PIL recién hechos
         if hasattr(self, "_txt_modos"):
             for key in ("Historia", "Infinito"):
                 for tid in self._txt_modos[key]:
                     self.canvas.tag_raise(tid)
         self.canvas.tag_raise("clickable")
 
+    # Estilos activo/inactivo
     def _estilo_dif(self):
         paleta = {1: ("#2ecc71","black"), 2: ("#f1c40f","black"), 3: ("#e74c3c","white")}
         for i, b in enumerate(self._btns_dif):
@@ -410,7 +419,7 @@ class MenuInicio:
             hex_col = "#{:02x}{:02x}{:02x}".format(*color)
             for tid in self._txt_modos[key]:
                 self.canvas.itemconfig(tid, fill=hex_col)
-
+    #Callbacks
     def elegir_dificultad(self, d):
         self.dificultad = d
         self._redibujar_filas_dif()
@@ -429,9 +438,7 @@ class MenuInicio:
         mixer.music.stop()
         self.root.destroy()
 
-
-# ---- arena de pelea ----
-
+# arena de pelea
 class Arena:
     def __init__(self, dificultad, modo):
         self.dificultad = dificultad
@@ -599,7 +606,7 @@ class Arena:
                                      font=("Courier", 11, "bold"), bg="#fbf9f0")
         self.lbl_nom_nomo.place(x=10, y=8)
         self.lbl_hp_nomo = tk.Label(self.card_nomo, text="", font=("Courier", 9, "bold"), bg="#fbf9f0")
-        self.lbl_hp_nomo.place(x=10, y=30)
+        self.lbl_hp_nomo.place(x=10, y=25)
         self.lbl_alfas = tk.Label(self.card_nomo, text="", font=("Courier", 8, "italic"),
                                   bg="#fbf9f0", fg="#7f8c8d")
         self.lbl_alfas.place(x=10, y=65)
@@ -660,27 +667,48 @@ class Arena:
 
     def refrescar(self):
         self.lbl_nom_enano.config(text=self.enemigo.nombre.upper())
-        self.lbl_hp_nomo.config(text=f"PS: {self.heroe.obtener_salud():.1f} / {self.heroe.hp_max}")
-        self.lbl_hp_enano.config(text=f"PS: {self.enemigo.obtener_salud():.1f} / {self.enemigo.hp_max}")
+        
+        vida_heroe_actual = float(self.heroe._salud_actual)
+        vida_heroe_maxima = float(self.heroe._salud_maxima)
+        
+        vida_enemigo_actual = float(self.enemigo._salud_actual)
+        vida_enemigo_maxima = float(self.enemigo._salud_maxima)
+
+        # Actualizamos los labels de texto (estos se van a mantener sincronizados)
+        self.lbl_hp_nomo.config(text=f"PS: {vida_heroe_actual:.1f} / {vida_heroe_maxima:.0f}")
+        self.lbl_hp_enano.config(text=f"PS: {vida_enemigo_actual:.1f} / {vida_enemigo_maxima:.0f}")
         self.lbl_alfas.config(text=f"Guaymalléns: {self.heroe.obtener_cantidad_alfajores()} 🍪")
 
+        # Limpiamos las barras viejas usando el tag de Tkinter
         self.card_enano.delete("barra")
         self.card_nomo.delete("barra")
 
-        pct_e = max(0.0, self.enemigo.obtener_salud() / self.enemigo.hp_max)
+        # CALCULO DE LA BARRA DEL ENEMIGO
+        pct_e = max(0.0, min(1.0, vida_enemigo_actual / vida_enemigo_maxima))
+        ancho_barra_enemigo = int(240 * pct_e)
         c_e = "#2ecc71" if pct_e > 0.2 else "#e74c3c"
+        
+        # Redibujamos fondo y barra del enemigo
         self.card_enano.create_rectangle(10, 52, 250, 64, fill="#bdc3c7", outline="black", tags="barra")
-        self.card_enano.create_rectangle(10, 52, 10 + int(240*pct_e), 64, fill=c_e, outline="", tags="barra")
+        self.card_enano.create_rectangle(10, 52, 10 + ancho_barra_enemigo, 64, fill=c_e, outline="", tags="barra")
 
-        pct_n = max(0.0, self.heroe.obtener_salud() / self.heroe.hp_max)
+        # CALCULO DE LA BARRA DEL HEROE
+        pct_n = max(0.0, min(1.0, vida_heroe_actual / vida_heroe_maxima))
+        ancho_barra_heroe = int(240 * pct_n)
         c_n = "#2ecc71" if pct_n > 0.2 else "#e74c3c"
+        
+        # Redibujamos fondo y barra del héroe
         self.card_nomo.create_rectangle(10, 50, 250, 62, fill="#bdc3c7", outline="black", tags="barra")
-        self.card_nomo.create_rectangle(10, 50, 10 + int(240*pct_n), 62, fill=c_n, outline="", tags="barra")
+        self.card_nomo.create_rectangle(10, 50, 10 + ancho_barra_heroe, 62, fill=c_n, outline="", tags="barra")
 
+        # Cambios de sprites por armadura rota
         if self.heroe.armadura_rota and self.img_nomo_roto:
             self.canvas.itemconfig(self.id_nomo, image=self.img_nomo_roto)
         if self.enemigo.armadura_rota and self.img_enano_roto:
             self.canvas.itemconfig(self.id_enano, image=self.img_enano_roto)
+
+        # Forzamos la actualización visual en Tkinter
+        self.ventana.update_idletasks()
 
     # animaciones de movimiento
     def mover_nomo_adelante(self, x):
@@ -753,7 +781,7 @@ class Arena:
     def terminar_curacion(self, id_item):
         self.heroe.usar_alfajor()
         self.canvas.delete(id_item)
-        self.log(f"🍪 ¡{self.heroe.nombre.upper()} se clavó un Guaymallén bajonero!\nRecuperó 50 PS del backend.")
+        self.log(f"🍪 ¡{self.heroe.nombre.upper()} se clavó un Guaymallén bajonero!\nRecuperó 50 PS.")
         self.refrescar()
         self.ventana.after(1500, self.turno_enemigo)
 
@@ -795,25 +823,34 @@ class Arena:
         if self.snd_ronda_ok: self.snd_ronda_ok.play()
 
         self.ronda += 1
-        msg = f"🏆 ¡Mataste al enano! Sumás +1 Guaymallén 🍪.\n⚠️ Recordá que tu escudo NO se cura solo, seguís con la armadura gastada..."
+        
+        msg = f"🏆 ¡Mataste al enano! Sumás +1 Guaymallén 🍪.\n⚠️ Pero ojo... acordate que no es muy sano andar juntando alfajores del piso..."
 
         if self.modo == "Historia" and self.ronda == 6:
             msg = ("🏆 ¡Limpiaste las 5 hordas de lacayos!\n\n"
                    "🛡 ¡TE ENCONTRÁS UN ESCUDO EN EL PISO!\n"
                    "Robertito se lo pone encima y queda blindado\n"
                    "para aguantar los paravalanchas del JEFE FALOPINO...")
-            self.heroe.armadura_rota = False
+        
+            # Ahora que el método existe arriba, lo llamamos de forma segura
             if self.dificultad == 1:
-                self.heroe.armadura = Armadura("Tapa de Olla Nivel 1", 3)
-            elif self.dificultad == 2:
-                self.heroe.armadura = Armadura("Tapa de Olla de Aluminio", 3)
-            else:
-                self.heroe.armadura = Armadura("Portón de Reja Blindado", 4)
-                self.heroe.sprite_base = ruta_spr("nomo_dificil_armadura.png")
-                self.heroe.sprite_roto = ruta_spr("nomo_dificil.png")
+                self.heroe._armadura_equipada = Armadura("Campera de Jean con Escudo de Patente", 3)
+                self.heroe.armadura_rota = False
 
+            elif self.dificultad == 2:
+                self.heroe._armadura_equipada = Armadura("Tapa de Olla de Aluminio", 1)
+                self.heroe.armadura_rota = False
+
+            else:
+                self.heroe._armadura_equipada = Armadura("Portón de Reja Blindado", 4)
+                self.heroe.armadura_rota = False
+                self.heroe.sprite_base = ruta_spr("nomo_dificil_armadura.png")
+            self.heroe.sprite_roto = ruta_spr("nomo_dificil.png")
+
+           
         if self.snd_item: self.snd_item.play()
-        messagebox.showinfo("PRÓXIMA ONDA", msg)
+
+        messagebox.showinfo("PRÓXIMA RONDA", msg)
 
         self.limpiar_arena()
         self.nuevo_enemigo()
@@ -827,9 +864,7 @@ class Arena:
         self.ventana.destroy()
         PantallaFin(gano=False, rondas=self.ronda, modo=self.modo)
 
-
-# ---- pantalla de fin ----
-
+# pantalla de fin
 class PantallaFin:
     def __init__(self, gano, rondas, modo="Historia"):
         self.root = tk.Tk()
@@ -945,9 +980,7 @@ class PantallaFin:
             tk.Button(self.root, text="REINTENTAR", font=("Arial", 11, "bold"),
                       command=self.reintentar).place(x=380, y=565, width=120, height=40)
 
-
-# ---- pantalla de intro ----
-
+# pantalla de intro
 class Intro:
     CARPETA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "intro")
     MS_FRAME = 77
@@ -1071,9 +1104,7 @@ class Intro:
             self.frames.clear()
             self.callback()
 
-
-# ---- main ----
-
+# main
 def main():
     root = tk.Tk()
     root.title("Gnomos vs Enanos")
@@ -1099,7 +1130,6 @@ def main():
     if menu.confirmado:
         juego = Arena(menu.dificultad, menu.modo)
         juego.ventana.mainloop()
-
 
 if __name__ == "__main__":
     main()
