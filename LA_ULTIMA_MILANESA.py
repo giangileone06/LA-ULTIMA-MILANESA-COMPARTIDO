@@ -11,7 +11,7 @@ try:
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 except:
     pass
-
+ 
 # guarda el record del modo infinito en un json
 ARCHIVO_RECORD = "record_infinito.json"
 
@@ -142,45 +142,45 @@ class Armadura:
     def absorber(self, dmg):
         return max(0, dmg - self.res)
 
-
+ 
 # ---- tipos de enanos ----
 
 class EnanoManija(Personaje):
     def __init__(self, dif, *args):
         if dif == "facil":
-            super().__init__("Enano Manija", 30, Arma("Vino en Cartón Cortado", 3, 6), None,
+            super().__init__("Enano Manija", 30, Arma("Destornillador Phillips", 3, 6), None,
                              ruta_spr("enano_manija_facil.png"), ruta_spr("enano_manija_facil.png"), esquiva=35)
         elif dif == "medio":
-            super().__init__("Enano Manija", 45, Arma("Tramontina Oxidado", 4, 7), Armadura("Remera a Rayas Estirada", 1),
+            super().__init__("Enano Manija", 45, Arma("Llave Cruz Oxidada", 4, 7), Armadura("Chaleco Cartonero y Canilleras de Fútbol", 1),
                              ruta_spr("enano_manija_medio_armadura.png"), ruta_spr("enano_manija_medio_sin_armadura.png"), esquiva=35)
         else:
-            super().__init__("Enano Manija", 55, Arma("Pico de Botella Roto", 7, 13), Armadura("Campera de Cuero Tachonada", 1),
+            super().__init__("Enano Manija", 55, Arma("Botella Quilmes Rota", 7, 13), Armadura("Armadura de Chapas de Coca y Mascara de Soldor", 1),
                              ruta_spr("enano_manija_dificil_armadura.png"), ruta_spr("enano_manija_dificil_sin_armadura.png"), esquiva=35)
 
 
 class EnanoComunacho(Personaje):
     def __init__(self, dif, *args):
         if dif == "facil":
-            super().__init__("Enano Comunacho", 40, Arma("Tramontina Doblado", 4, 8), None,
+            super().__init__("Enano Comunacho", 40, Arma("Tramontina Oxidado", 4, 8), None,
                              ruta_spr("enano_machete.png"), ruta_spr("enano_machete.png"), esquiva=10)
         elif dif == "medio":
-            super().__init__("Enano Comunacho", 55, Arma("Fierro de Obra", 5, 9), Armadura("Chapa de Aluminio", 1),
+            super().__init__("Enano Comunacho", 55, Arma("Fierro de Obra", 5, 9), Armadura("Tapa de Olla de Aluminio", 1),
                              ruta_spr("enano_fierro_armadura.png"), ruta_spr("enano_comun_medio_sin_armadura.png"), esquiva=10)
         else:
-            super().__init__("Enano Comunacho", 70, Arma("Espada Oxidada de Reja", 9, 15), Armadura("Escudo de Madera Maciza", 2),
+            super().__init__("Enano Comunacho", 70, Arma("Cadena de Moto con Candado", 9, 15), Armadura("Porton de Reja Blindado", 2),
                              ruta_spr("enano_comun_dificil_armadura.png"), ruta_spr("enano_comun_dificil_sin_armadura.png"), esquiva=10)
 
 
 class EnanoMorfi(Personaje):
     def __init__(self, dif, *args):
         if dif == "facil":
-            super().__init__("Enano Morfi", 60, Arma("Maza de Goma", 5, 10), None,
+            super().__init__("Enano Morfi", 60, Arma("Martillo y Hoz", 5, 10), None,
                              ruta_spr("enano_tanque_facil.png"), ruta_spr("enano_tanque_facil.png"), esquiva=0)
         elif dif == "medio":
-            super().__init__("Enano Morfi", 85, Arma("Cartel de Moscú", 6, 11), Armadura("Chaleco de Lana Grueso", 2),
+            super().__init__("Enano Morfi", 85, Arma("Cartel de Moscú", 6, 11), Armadura("Armadura de Chatarra Sovietica", 2),
                              ruta_spr("enano_tanque_medio_armadura.png"), ruta_spr("enano_tanque_medio_sin_armadura.png"), esquiva=0)
         else:
-            super().__init__("Enano Morfi", 100, Arma("Garrafa de Gas de 10Kg", 11, 18), Armadura("Traje de Chatarrero Blindado", 3),
+            super().__init__("Enano Morfi", 100, Arma("Garrafa de Gas de 10Kg", 11, 18), Armadura("Coraza de Metal Reciclado Blindado", 3),
                              ruta_spr("enano_tanque_dificil_armadura.png"), ruta_spr("enano_tanque_dificil_sin_armadura.png"), esquiva=0)
 
 
@@ -448,19 +448,19 @@ class Arena:
         if dificultad == 1:
             self.dif_str = "facil"
             self.heroe = Jugador("Robertito", 140,
-                Arma("Sifón con Escudo Quilmes", 16, 28),
-                Armadura("Tapa de Olla Nivel 1", 3), 3,
+                Arma("Sifón de Sodazo", 16, 28),
+                Armadura("Campera de Jean con Escudo de Patente", 3), 3,
                 ruta_spr("nomo_facil_armadura.png"), ruta_spr("nomo_facil_sin_armadura.png"))
         elif dificultad == 2:
             self.dif_str = "medio"
             self.heroe = Jugador("Robertito", 110,
-                Arma("Sifón Clásico", 14, 25),
+                Arma("Macana de Palo de Escoba", 14, 25),
                 Armadura("Tapa de Olla de Aluminio", 3), 2,
                 ruta_spr("nomo_medio_armadura.png"), ruta_spr("nomo_medio_sin_armadura.png"))
         else:
             self.dif_str = "dificil"
             self.heroe = Jugador("Robertito", 105,
-                Arma("Machete Oxidado de Mano", 14, 28),
+                Arma("Tramontina Doblegado", 14, 28),
                 None, 2,
                 ruta_spr("nomo_dificil.png"), ruta_spr("nomo_dificil.png"))
 
