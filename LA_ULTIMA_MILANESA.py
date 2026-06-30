@@ -58,7 +58,7 @@ def ruta_fnd(f): return os.path.join(FND, f)
 class Personaje:
     def __init__(self, nombre, salud, arma, armadura=None, sprite_base="", sprite_roto="", esquiva=0):
         self.nombre = nombre
-        # 💡 Atributos privados encapsulados como pide el profe:
+        
         self._salud_actual = salud
         self._salud_maxima = salud
         self._arma_equipada = arma
@@ -74,18 +74,17 @@ class Personaje:
     def obtener_salud(self):
         return self._salud_actual
 
-    # 💡 El método mágico __str__ que exige la consigna
+    # El método mágico 
     def __str__(self):
         arma_txt = self._arma_equipada if self._arma_equipada else "A mano limpia"
         return f"{self.nombre} (HP: {self._salud_actual}/{self._salud_maxima}) - Equipado con: {arma_txt}"
 
-    # 💡 Dunder add modificado
     def __add__(self, curacion):
         self._salud_actual = min(self._salud_actual + curacion, self._salud_maxima)
         return self
 
     def recibir_daño(self, dmg, arena):
-        # Probabilidad de esquivar (Polimorfismo base)
+        # Probabilidad de esquivar 
         if random.randint(1, 100) <= self.esquiva:
             if arena.snd_esquivar:
                 arena.snd_esquivar.play()
@@ -93,7 +92,7 @@ class Personaje:
 
         msg_arm = ""
         if self._armadura_equipada and not self.armadura_rota:
-            # 💡 Usamos el método absorber de la armadura como pide la Fase 5
+            
             dmg = self._armadura_equipada.absorber(dmg)
             msg_arm = f"🛡️ ¡Mitigado por {self._armadura_equipada.nombre}!\n"
             if self._salud_actual - dmg <= self._salud_maxima * 0.5:
@@ -109,7 +108,6 @@ class Personaje:
         return f"{msg_arm}💥 {self.nombre} recibió {dmg:.1f} de daño.\n", False
 
     def atacar(self, objetivo, arena):
-        # 💡 Daño calculado delegando en el arma (Composición)
         golpe = self._arma_equipada.tirar_daño()
         reporte, murio = objetivo.recibir_daño(golpe, arena)
         return f"⚔️ {self.nombre} atacó con {self._arma_equipada._nombre}.\n{reporte}", murio
@@ -204,7 +202,6 @@ class JefeFalopino(Personaje):
             sprite_roto=ruta_spr("jefe_sin_armadura.png"),
             esquiva=10
         )
-
 # ---- helpers visuales ----
 def hacer_panel(w, h, color=(10, 6, 2), alpha=130, radio=10, borde="#D4AF37", grosor=2, glow=False):
     rgb_borde = tuple(int(borde[i:i+2], 16) for i in (1, 3, 5))
@@ -437,6 +434,7 @@ class MenuInicio:
         self.confirmado = True
         mixer.music.stop()
         self.root.destroy()
+
 
 # arena de pelea
 class Arena:
