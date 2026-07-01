@@ -196,7 +196,7 @@ class JefeFalopino(Personaje):
         super().__init__(
             nombre="Jefe Falopino",
             salud=135,
-            arma=Arma("Palo de Paravalancha de Boca", 13, 23),
+            arma=Arma("Palo de Mística Bostera", 13, 23),
             armadura=Armadura("Armadura Medieval de Platino", 5),
             sprite_base=ruta_spr("jefe_armadura.png"),
             sprite_roto=ruta_spr("jefe_sin_armadura.png"),
@@ -292,13 +292,17 @@ class MenuInicio:
 
         self.canvas.create_text(310, 40, text="⚔️ GNOMOS VS ENANITOS ⚔️",
             font=("Courier", 15, "bold"), fill=COLOR_ORO, anchor="center")
+        self.canvas.create_text(300,57,
+            text="Solo uno se va a quedar con la última milanga",
+            font=("Courier", 9, "italic"), fill=COLOR_ORO, anchor="center")
+        
         self.canvas.create_text(83, 94, text="🧠 SELECCIONÁ TU GNOMO",
             font=("Arial", 10, "bold"), fill="#ffffff", anchor="w")
 
         textos_dif = [
-            "🟢 ROBERTITO (Fácil): Sifón rendidor, Enanos sin escudo.",
-            "🟡 ROBERTITO (Medio): Macana de palo de escoba, Balanceado criollo.",
-            "🔴 ROBERTITO (Ultra): Tramontina doblegado, vas a puro pulmón.",
+            "🟢 ROBERTITO CHETADO: Sifón rendidor, Enanos sin escudo.",
+            "🟡 ROBERTITO : Macana de palo de escoba, Balanceado criollo.",
+            "🔴 ROBERTITO EN BOLAS: Tramontina doblegado, vas a puro pulmón.",
         ]
         for i, t in enumerate(textos_dif):
             self.canvas.create_text(82, self._y_filas[i] + 12, text=t,
@@ -311,7 +315,7 @@ class MenuInicio:
         self._txt_modos["Historia"] = [
             self.canvas.create_text(310, 339, text="📜 MODO HISTORIA",
                 font=("Courier", 11, "bold"), fill="#ffffff", anchor="center"),
-            self.canvas.create_text(310, 358, text="(5 Rondas de Lacayos + El Jefe Falopino)",
+            self.canvas.create_text(310, 358,text="(5 Rondas de soldados enanos + Jefe Falopino)",
                 font=("Courier", 9), fill="#cccccc", anchor="center"),
         ]
         self._txt_modos["Infinito"] = [
@@ -334,12 +338,12 @@ class MenuInicio:
 
         #Botones de dificultad
         self._btns_dif = []
-        for i, label in enumerate(["Fácil", "Medio", "Ultra"]):
+        for i, label in enumerate(["BIEN EASY", "MA O MENO", "RE JODIDO"]):
             y = self._y_filas[i] + 2
             b = tk.Button(self.root, text=label, font=("Arial", 9, "bold"), width=8,
                           bg="#222222", fg="#999999", relief="flat", bd=0,
                           activebackground="#333333", activeforeground="white", cursor="hand2")
-            b.place(x=494, y=y, width=62, height=26)
+            b.place(x=485, y=y, width=70, height=26)
             self._btns_dif.append(b)
         for i in range(3):
             self._btns_dif[i].config(command=lambda n=i+1: self.elegir_dificultad(n))
@@ -642,11 +646,11 @@ class Arena:
         # botones
         self.frame_btns = tk.Frame(self.ventana, bg="white", bd=4, relief="ridge")
         self.frame_btns.place(x=460, y=380, width=280, height=150)
-        self.btn_lucha = tk.Button(self.frame_btns, text="⚔️ LUCHA",
+        self.btn_lucha = tk.Button(self.frame_btns, text="⚔️ ATACAR",
                                    font=("Courier", 14, "bold"), bg="white", fg="black",
                                    bd=0, command=self.atacar)
         self.btn_lucha.place(x=10, y=15, width=250, height=50)
-        self.btn_mochila = tk.Button(self.frame_btns, text="🎒 MOCHILA",
+        self.btn_mochila = tk.Button(self.frame_btns, text="🎒 RIÑONERA",
                                      font=("Courier", 14, "bold"), bg="white", fg="black",
                                      bd=0, command=self.usar_item)
         self.btn_mochila.place(x=10, y=75, width=250, height=50)
@@ -654,7 +658,7 @@ class Arena:
         if self.es_jefe:
             msg = "🔥 ¡EL BARRIO ESTÁ TOTALMENTE PRENDIDO FUEGO! 🔥\nEL JEFE FALOPINO sale a reventarte.\n¿Qué hará tu Gnomo?"
         else:
-            msg = f"¡RONDA {self.ronda}! Un {self.enemigo.nombre} te corta el pasillo.\n¿Qué hace tu Gnomo?"
+            msg = f"¡RONDA {self.ronda}! Un {self.enemigo.nombre} te corta el pasillo.\n¿Qué hará Robertito?"
         self.log(msg)
 
     def log(self, texto):
@@ -795,7 +799,7 @@ class Arena:
             self.ventana.after(1500, self.game_over)
         else:
             self.ventana.after(1800, lambda: [
-                self.log(f"¿Qué debería hacer\n{self.heroe.nombre.upper()}?"),
+                self.log(f"¿Qué pingo hacemos con\n{self.heroe.nombre.upper()}?"),
                 self.btn_lucha.config(state="normal"),
                 self.btn_mochila.config(state="normal")
             ])
@@ -825,10 +829,10 @@ class Arena:
         msg = f"🏆 ¡Mataste al enano! Sumás +1 Guaymallén 🍪.\n⚠️ Pero ojo... acordate que no es muy sano andar juntando alfajores del piso..."
 
         if self.modo == "Historia" and self.ronda == 6:
-            msg = ("🏆 ¡Limpiaste las 5 hordas de lacayos!\n\n"
+            msg = ("🏆 ¡Re piola che, te bajaste las 5 hordas!\n\n"
                    "🛡 ¡TE ENCONTRÁS UN ESCUDO EN EL PISO!\n"
                    "Robertito se lo pone encima y queda blindado\n"
-                   "para aguantar los paravalanchas del JEFE FALOPINO...")
+                   "para aguantar al gran JEFE FALOPINO...")
         
             # Ahora que el método existe arriba, lo llamamos de forma segura
             if self.dificultad == 1:
@@ -950,7 +954,7 @@ class PantallaFin:
                     "El Lore de tu Fracaso: Gracias a tu increíble falta de pulgar, el enano gordo ruso se comió la milanesa de un solo "
                     "bocado en tu cara, eructó en clave morse y usó tu gorrito de gnomo para destapar la canaleta. El barrio cayó en una "
                     "edad oscura de desnutrición y cumbia rancia. Todo por tu culpa.\n\n"
-                    "¿Qué vas a hacer ahora? ¿Vas a llorar en Twitter o vas a intentar de vuelta, boludo? Dale, metele \"Reintentar\" "
+                    "¿Qué vas a hacer ahora? ¿Vas a llorar en Twitter o vas a intentar de vuelta, boludo? Dale, metele \"VAMO DE NUEVO\" "
                     "a ver si esta vez coordinás dos neuronas libres."
                 )
                 color = "#e74c3c"
@@ -975,7 +979,7 @@ class PantallaFin:
             tk.Button(self.root, image=self.img_retry, bg="#0b0f19", bd=0,
                       activebackground="#0b0f19", command=self.reintentar).place(x=380, y=570)
         else:
-            tk.Button(self.root, text="REINTENTAR", font=("Arial", 11, "bold"),
+            tk.Button(self.root, text="VAMO DE NUEVO", font=("Arial", 11, "bold"),
                       command=self.reintentar).place(x=380, y=565, width=120, height=40)
 
 # pantalla de intro
